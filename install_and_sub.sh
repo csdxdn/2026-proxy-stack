@@ -179,6 +179,10 @@ systemctl start tuic
 while [[ -z "$DOMAIN" ]]; do
   read -p "请输入你的 VPS 域名 (例: vm.csdxdn.top): " DOMAIN
 done
+if [[ -z "$DOMAIN" ]]; then
+  echo "Error: VPS 域名未设置，退出"
+  exit 1
+fi
 
 # 创建订阅文件
 mkdir -p /var/www/html
