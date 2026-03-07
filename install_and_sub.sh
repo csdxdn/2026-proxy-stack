@@ -145,7 +145,8 @@ cat > /etc/tuic/config.json <<EOF
 }
 EOF
 
-wget -O /usr/local/bin/tuic-server https://github.com/tuic-protocol/tuic/releases/latest/download/tuic-server-linux-amd64
+TUIC_LATEST=$(curl -s https://api.github.com/repos/tuic-protocol/tuic/releases/latest | jq -r '.assets[] | select(.name | test("linux-amd64")) | .browser_download_url')
+wget -O /usr/local/bin/tuic-server "$TUIC_LATEST"
 chmod +x /usr/local/bin/tuic-server
 
 cat > /etc/systemd/system/tuic.service <<EOF
