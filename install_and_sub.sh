@@ -5,11 +5,15 @@ set -e
 # 生产级 2026 顶级代理一键部署脚本
 # =======================
 
-read -p "请输入你的 VPS 域名 (例如 vm.csdxdn.top): " DOMAIN
-if [[ -z "$DOMAIN" ]]; then
-    echo "错误: 域名不能为空"
-    exit 1
-fi
+while true; do
+    read -p "请输入你的 VPS 域名: " DOMAIN
+    # 简单域名正则: 支持子域名、字母、数字和短横线
+    if [[ $DOMAIN =~ ^([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$ ]]; then
+        break
+    else
+        echo "错误: 域名格式不正确，请重新输入"
+    fi
+done
 
 REALITY_PORT=443
 HYSTERIA_PORT=8443
@@ -30,8 +34,9 @@ apt install -y curl wget openssl uuid-runtime socat certbot jq
 # 开启 BBR
 # =======================
 echo "开启 BBR..."
-sysctl -w net.core.default_qdisc=fq
-sysctl -w net.ipv4.tcp_congestion_control=bbr
+echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
+echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+sysctl -p
 
 # =======================
 # Xray 安装与配置
@@ -79,7 +84,7 @@ systemctl restart xray
 systemctl enable xray
 
 # =======================
-# Hysteria2 / Sing-Box 安装与配置
+# Sing-Box / Hysteria2 安装与配置
 # =======================
 echo "安装 Sing-Box (Hysteria2)..."
 curl -fsSL https://sing-box.app/install.sh | bash
@@ -147,7 +152,7 @@ EOF
 
 # 自动下载 TUIC 最新版本
 TUIC_LATEST=$(curl -s https://api.github.com/repos/tuic-protocol/tuic/releases/latest \
-| jq -r '.assets[] | select(.name | test("linux-amd64")) | .browser_download_url')
+| jq -r '.assets[] | select(.name | test("linux")) | .browser_download_url')
 wget -O /usr/local/bin/tuic-server "$TUIC_LATEST"
 chmod +x /usr/local/bin/tuic-server
 
@@ -167,24 +172,21 @@ EOF
 systemctl daemon-reload
 systemctl enable tuic
 systemctl start tuic
+
 # =======================
-# 生成 Clash 订阅
+#  Clash 节点订阅
 # =======================
-mkdir -p /var/www/html
-cat > /var/www/html/sub.yaml <<EOF
+echo ""
+echo "=============================="
+echo "部署完成，Clash 节点订阅："
+echo ""
+
+cat <<EOF
 proxies:
 - {name: Reality, server: $DOMAIN, port: $REALITY_PORT, type: vless, uuid: $UUID, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.microsoft.com, client-fingerprint: chrome, reality-opts: {public-key: $PUBLIC, short-id: $SHORTID}}
 - {name: Hysteria2, type: hysteria2, server: $DOMAIN, port: $HYSTERIA_PORT, password: $HY_PASS, sni: $DOMAIN, skip-cert-verify: true}
 - {name: TUIC, type: tuic, server: $DOMAIN, port: $TUIC_PORT, uuid: $UUID, password: $TUIC_PASS, alpn: [h3], skip-cert-verify: true}
 EOF
 
-nohup socat TCP-LISTEN:80,fork FILE:/var/www/html/sub.yaml &>/dev/null &
-
 echo ""
-echo "=============================="
-echo "部署完成"
-echo "Clash 订阅地址: http://$DOMAIN/sub.yaml"
-echo "Reality UUID: $UUID"
-echo "Hysteria2 密码: $HY_PASS"
-echo "TUIC 密码: $TUIC_PASS"
 echo "=============================="
