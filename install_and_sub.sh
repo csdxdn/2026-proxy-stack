@@ -84,7 +84,7 @@ echo "安装 Sing-Box (Hysteria2)..."
 curl -fsSL https://sing-box.app/install.sh | bash
 
 echo "申请 TLS 证书..."
-certbot certonly --standalone -d "$DOMAIN" --non-interactive --agree-tos -m "admin@$DOMAIN"
+certbot certonly --standalone -d "$DOMAIN" --non-interactive --agree-tos -m "admin@$DOMAIN" || true
 
 HY_PASS=$(openssl rand -hex 8)
 
@@ -128,7 +128,6 @@ systemctl restart sing-box
 # =======================
 # TUIC 安装与配置
 # =======================
-echo "安装 TUIC..."
 mkdir -p /etc/tuic
 TUIC_PASS=$(openssl rand -hex 8)
 
@@ -145,8 +144,9 @@ cat > /etc/tuic/config.json <<EOF
 }
 EOF
 
+# 自动下载 TUIC 最新版本
 TUIC_LATEST=$(curl -s https://api.github.com/repos/tuic-protocol/tuic/releases/latest \
-  | jq -r '.assets[] | select(.name | test("linux-amd64")) | .browser_download_url')
+| jq -r '.assets[] | select(.name | test("linux-amd64")) | .browser_download_url')
 wget -O /usr/local/bin/tuic-server "$TUIC_LATEST"
 chmod +x /usr/local/bin/tuic-server
 
@@ -166,33 +166,28 @@ EOF
 systemctl daemon-reload
 systemctl enable tuic
 systemctl start tuic
-
 # =======================
 # 生成 Clash 订阅
 # =======================
-echo "生成 Clash 订阅..."
 SUB_FILE="/var/www/html/sub.yaml"
 mkdir -p /var/www/html
-
 cat > $SUB_FILE <<EOF
 proxies:
-- {name: Reality, server: $DOMAIN, port: $REALITY_PORT, type: vless, uuid: $UUID, network: tcp, tls: true, flow: xtls-rprx-vision, servername: www.microsoft.com, client-fingerprint: chrome, reality-opts: {public-key: $PUBLIC, short-id: $SHORTID}}
+- {name: Reality, server: $DOMAIN, port: $REALITY_PORT, type: vless, uuid: $UUID, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.microsoft.com, client-fingerprint: chrome, reality-opts: {public-key: $PUBLIC, short-id: $SHORTID}}
 - {name: Hysteria2, type: hysteria2, server: $DOMAIN, port: $HYSTERIA_PORT, password: $HY_PASS, sni: $DOMAIN, skip-cert-verify: true}
 - {name: TUIC, type: tuic, server: $DOMAIN, port: $TUIC_PORT, uuid: $UUID, password: $TUIC_PASS, alpn: [h3], skip-cert-verify: true}
 EOF
 
 nohup socat TCP-LISTEN:80,fork FILE:$SUB_FILE &>/dev/null &
 
-# =======================
-# 输出信息
-# =======================
 echo ""
 echo "=============================="
 echo "安装完成"
 echo ""
-echo "Clash 订阅地址:"
+echo "订阅地址:"
 echo "http://$DOMAIN/sub.yaml"
 echo ""
-echo "Reality UUID:"
-echo "$UUID"
+echo "Reality UUID: $UUID"
+echo "Hysteria2 密码: $HY_PASS"
+echo "TUIC 密码: $TUIC_PASS"
 echo "=============================="
