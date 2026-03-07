@@ -17,7 +17,6 @@ done
 
 REALITY_PORT=443
 HYSTERIA_PORT=8443
-TUIC_PORT=8444
 
 echo "======================"
 echo "停止可能占用端口 80 的服务..."
@@ -132,65 +131,6 @@ systemctl enable sing-box
 systemctl restart sing-box
 
 # =======================
-# TUIC 安装与配置
-# =======================
-mkdir -p /etc/tuic
-TUIC_PASS=$(openssl rand -hex 8)
-
-cat > /etc/tuic/config.json <<EOF
-{
-  "server": "[::]:$TUIC_PORT",
-  "users": {
-    "$UUID": "$TUIC_PASS"
-  },
-  "certificate": "/etc/letsencrypt/live/$DOMAIN/fullchain.pem",
-  "private_key": "/etc/letsencrypt/live/$DOMAIN/privkey.pem",
-  "congestion_control": "bbr",
-  "alpn": ["h3"]
-}
-EOF
-
-# 自动下载 TUIC 最新版本
-# 检测系统架构
-ARCH=$(uname -m)
-case "$ARCH" in
-    x86_64) ARCH_NAME="x86_64-unknown-linux-gnu" ;;
-    aarch64|arm64) ARCH_NAME="aarch64-unknown-linux-gnu" ;;
-    armv7l) ARCH_NAME="armv7-unknown-linux-gnueabihf" ;;
-    i686) ARCH_NAME="i686-unknown-linux-gnu" ;;
-    *) echo "不支持的架构: $ARCH"; exit 1 ;;
-esac
-
-# 从 GitHub API 获取最新版本、匹配架构的 URL，只取第一条
-TUIC_LATEST=$(curl -s https://api.github.com/repos/tuic-protocol/tuic/releases/latest \
-| jq -r ".assets[] | select(.name | test(\"$ARCH_NAME\")) | .browser_download_url" | head -n1)
-
-if [[ -z "$TUIC_LATEST" ]]; then
-    echo "无法获取 TUIC 下载链接，请检查 GitHub 发布页"
-    exit 1
-fi
-
-wget -O /usr/local/bin/tuic-server "$TUIC_LATEST"
-chmod +x /usr/local/bin/tuic-server
-
-cat > /etc/systemd/system/tuic.service <<EOF
-[Unit]
-Description=TUIC Server
-After=network.target
-
-[Service]
-ExecStart=/usr/local/bin/tuic-server -c /etc/tuic/config.json
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable tuic
-systemctl start tuic
-
-# =======================
 #  Clash 节点订阅
 # =======================
 echo ""
@@ -202,7 +142,6 @@ cat <<EOF
 proxies:
 - {name: Reality, server: $DOMAIN, port: $REALITY_PORT, type: vless, uuid: $UUID, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.microsoft.com, client-fingerprint: chrome, reality-opts: {public-key: $PUBLIC, short-id: $SHORTID}}
 - {name: Hysteria2, type: hysteria2, server: $DOMAIN, port: $HYSTERIA_PORT, password: $HY_PASS, sni: $DOMAIN, skip-cert-verify: true}
-- {name: TUIC, type: tuic, server: $DOMAIN, port: $TUIC_PORT, uuid: $UUID, password: $TUIC_PASS, alpn: [h3], skip-cert-verify: true}
 EOF
 
 echo ""
