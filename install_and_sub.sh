@@ -32,18 +32,6 @@ if ! sysctl net.ipv4.tcp_congestion_control | grep -q bbr; then
     sysctl -p || true
 fi
 
-# 防火墙
-ufw allow 22
-ufw allow 80
-ufw allow 443
-ufw allow $HY_PORT
-ufw allow $TUIC_PORT
-ufw --force enable
-
-# 停止占用端口服务
-systemctl stop nginx 2>/dev/null || true
-systemctl stop apache2 2>/dev/null || true
-
 # =====================
 # 申请证书
 # =====================
