@@ -141,7 +141,7 @@ echo ""
 cat <<EOF
 proxies:
 - {name: Reality, server: $DOMAIN, port: $REALITY_PORT, type: vless, uuid: $UUID, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.microsoft.com, client-fingerprint: chrome, reality-opts: {public-key: $PUBLIC, short-id: $SHORTID}}
-- {name: Hysteria2, type: hysteria2, server: $DOMAIN, port: $HYSTERIA_PORT, password: $HY_PASS, sni: $DOMAIN, skip-cert-verify: true}
+- {name: Sing-Box, type: hysteria2, server: <DOMAIN>, port: <HYSTERIA_PORT>, password: <HY_PASS>, sni: <DOMAIN>, skip-cert-verify: false, up: 50, down: 500, obfs: salamander, obfs-password: <HY_PASS>}
 EOF
 
 echo ""
