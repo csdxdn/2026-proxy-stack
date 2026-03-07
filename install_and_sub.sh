@@ -5,10 +5,11 @@ set -e
 # 生产级 2026 顶级代理一键部署脚本
 # =======================
 
-# 交互式输入 VPS 域名，必须非空
-while [[ -z "$DOMAIN" ]]; do
-    read -p "请输入你的 VPS 域名 (例: vm.csdxdn.top): " DOMAIN
-done
+read -p "请输入你的 VPS 域名 (例如 vm.csdxdn.top): " DOMAIN
+if [[ -z "$DOMAIN" ]]; then
+    echo "错误: 域名不能为空"
+    exit 1
+fi
 
 REALITY_PORT=443
 HYSTERIA_PORT=8443
@@ -169,24 +170,20 @@ systemctl start tuic
 # =======================
 # 生成 Clash 订阅
 # =======================
-SUB_FILE="/var/www/html/sub.yaml"
 mkdir -p /var/www/html
-cat > $SUB_FILE <<EOF
+cat > /var/www/html/sub.yaml <<EOF
 proxies:
 - {name: Reality, server: $DOMAIN, port: $REALITY_PORT, type: vless, uuid: $UUID, network: tcp, tls: true, udp: true, flow: xtls-rprx-vision, servername: www.microsoft.com, client-fingerprint: chrome, reality-opts: {public-key: $PUBLIC, short-id: $SHORTID}}
 - {name: Hysteria2, type: hysteria2, server: $DOMAIN, port: $HYSTERIA_PORT, password: $HY_PASS, sni: $DOMAIN, skip-cert-verify: true}
 - {name: TUIC, type: tuic, server: $DOMAIN, port: $TUIC_PORT, uuid: $UUID, password: $TUIC_PASS, alpn: [h3], skip-cert-verify: true}
 EOF
 
-nohup socat TCP-LISTEN:80,fork FILE:$SUB_FILE &>/dev/null &
+nohup socat TCP-LISTEN:80,fork FILE:/var/www/html/sub.yaml &>/dev/null &
 
 echo ""
 echo "=============================="
-echo "安装完成"
-echo ""
-echo "订阅地址:"
-echo "http://$DOMAIN/sub.yaml"
-echo ""
+echo "部署完成"
+echo "Clash 订阅地址: http://$DOMAIN/sub.yaml"
 echo "Reality UUID: $UUID"
 echo "Hysteria2 密码: $HY_PASS"
 echo "TUIC 密码: $TUIC_PASS"
