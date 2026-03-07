@@ -151,6 +151,7 @@ cat > /etc/tuic/config.json <<EOF
 EOF
 
 # 自动下载 TUIC 最新版本
+# 检测系统架构
 ARCH=$(uname -m)
 case "$ARCH" in
     x86_64) ARCH_NAME="x86_64-unknown-linux-gnu" ;;
@@ -160,8 +161,14 @@ case "$ARCH" in
     *) echo "不支持的架构: $ARCH"; exit 1 ;;
 esac
 
+# 从 GitHub API 获取最新版本、匹配架构的 URL，只取第一条
 TUIC_LATEST=$(curl -s https://api.github.com/repos/tuic-protocol/tuic/releases/latest \
-| jq -r ".assets[] | select(.name | test(\"$ARCH_NAME\")) | .browser_download_url")
+| jq -r ".assets[] | select(.name | test(\"$ARCH_NAME\")) | .browser_download_url" | head -n1)
+
+if [[ -z "$TUIC_LATEST" ]]; then
+    echo "无法获取 TUIC 下载链接，请检查 GitHub 发布页"
+    exit 1
+fi
 
 wget -O /usr/local/bin/tuic-server "$TUIC_LATEST"
 chmod +x /usr/local/bin/tuic-server
