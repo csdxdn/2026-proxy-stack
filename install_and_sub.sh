@@ -151,8 +151,18 @@ cat > /etc/tuic/config.json <<EOF
 EOF
 
 # 自动下载 TUIC 最新版本
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64) ARCH_NAME="x86_64-unknown-linux-gnu" ;;
+    aarch64|arm64) ARCH_NAME="aarch64-unknown-linux-gnu" ;;
+    armv7l) ARCH_NAME="armv7-unknown-linux-gnueabihf" ;;
+    i686) ARCH_NAME="i686-unknown-linux-gnu" ;;
+    *) echo "不支持的架构: $ARCH"; exit 1 ;;
+esac
+
 TUIC_LATEST=$(curl -s https://api.github.com/repos/tuic-protocol/tuic/releases/latest \
-| jq -r '.assets[] | select(.name | test("linux-amd64")) | .browser_download_url')
+| jq -r ".assets[] | select(.name | test(\"$ARCH_NAME\")) | .browser_download_url")
+
 wget -O /usr/local/bin/tuic-server "$TUIC_LATEST"
 chmod +x /usr/local/bin/tuic-server
 
