@@ -4,7 +4,7 @@ set -e
 # ----------------------------
 # 交互式输入 VPS 域名
 # ----------------------------
-read -p "请输入你的 VPS 域名（例如 vm.csdxdn.top）: " DOMAIN
+read -p "请输入你的 VPS 域名: " DOMAIN
 
 if ! ping -c1 $DOMAIN &>/dev/null; then
     echo "域名解析失败，请确保域名指向当前 VPS IP！"
