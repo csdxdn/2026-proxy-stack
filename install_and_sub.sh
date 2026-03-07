@@ -6,7 +6,12 @@ echo " 2026 Proxy Stack Installer"
 echo " Reality + Hysteria2 + TUIC "
 echo "=============================="
 
-read -p "请输入你的域名: " DOMAIN
+read -rp "请输入你的域名: " DOMAIN
+
+if [ -z "$DOMAIN" ]; then
+    echo "域名不能为空"
+    exit 1
+fi
 
 REALITY_PORT=443
 HY_PORT=8443
@@ -20,9 +25,12 @@ apt install -y curl wget openssl uuid-runtime socat certbot jq
 
 # 开启BBR
 echo "开启BBR..."
-echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
-echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-sysctl -p
+
+if ! sysctl net.ipv4.tcp_congestion_control | grep -q bbr; then
+    echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
+    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+    sysctl -p || true
+fi
 
 # 防火墙
 ufw allow 22
