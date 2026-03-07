@@ -137,9 +137,9 @@ mkdir -p /etc/tuic
 
 TUIC_PASS=$(openssl rand -hex 8)
 
-wget -O /usr/local/bin/tuic-server \
-https://github.com/EAimTY/tuic/releases/latest/download/tuic-server-linux-amd64
-
+TUIC_URL=$(curl -s https://api.github.com/repos/tuic-protocol/tuic/releases/latest \
+  | jq -r '.assets[] | select(.name | test("tuic-server-linux-amd64")) | .browser_download_url')
+wget -O /usr/local/bin/tuic-server "$TUIC_URL"
 chmod +x /usr/local/bin/tuic-server
 
 cat > /etc/tuic/config.json <<EOF
