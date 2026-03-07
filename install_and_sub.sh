@@ -175,27 +175,31 @@ systemctl start tuic
 # =====================
 # 订阅
 # =====================
+# 检查域名输入
+while [[ -z "$DOMAIN" ]]; do
+  read -p "请输入你的 VPS 域名 (例: vm.csdxdn.top): " DOMAIN
+done
 
+# 创建订阅文件
 mkdir -p /var/www/html
 
 cat > /var/www/html/sub.yaml <<EOF
 proxies:
 - {name: Reality, server: $DOMAIN, port: $REALITY_PORT, type: vless, uuid: $UUID, network: tcp, tls: true, flow: xtls-rprx-vision, servername: www.microsoft.com, client-fingerprint: chrome, reality-opts: {public-key: $PUBLIC, short-id: $SHORTID}}
 
-- {name: Hysteria2, type: hysteria2, server: $DOMAIN, port: $HY_PORT, password: $HY_PASS, sni: $DOMAIN, skip-cert-verify: true}
+- {name: Hysteria2, type: hysteria2, server: $DOMAIN, port: $HYSTERIA_PORT, password: $HY_PASS, sni: $DOMAIN, skip-cert-verify: true}
 
 - {name: TUIC, type: tuic, server: $DOMAIN, port: $TUIC_PORT, uuid: $UUID, password: $TUIC_PASS, alpn: [h3], skip-cert-verify: true}
 EOF
 
+# 启动临时 HTTP 服务提供订阅
 nohup socat TCP-LISTEN:80,fork FILE:/var/www/html/sub.yaml &>/dev/null &
 
 echo ""
 echo "=============================="
 echo "安装完成"
 echo ""
-echo "订阅地址:"
-echo "http://$DOMAIN/sub.yaml"
+echo "订阅地址: http://$DOMAIN/sub.yaml"
 echo ""
-echo "Reality UUID:"
-echo "$UUID"
+echo "Reality UUID: $UUID"
 echo "=============================="
