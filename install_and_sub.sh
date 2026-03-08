@@ -16,7 +16,7 @@ fi
 done
 
 REALITY_PORT=8443
-HY_PORT=443
+HY_PORT=5000
 TUIC_PORT=8444
 
 apt update -y
@@ -33,6 +33,7 @@ ufw allow 80
 ufw allow 443
 ufw allow 8443
 ufw allow 8444
+ufw allow 5000
 ufw --force enable
 
 # =================
