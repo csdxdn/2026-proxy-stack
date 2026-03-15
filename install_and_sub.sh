@@ -202,7 +202,6 @@ echo "  - {name: Reality, server: $DOMAIN, port: $REALITY_PORT, type: vless, uui
 echo ""
 echo "# Hysteria2"
 echo "  - {name: Hysteria2, type: hysteria2, server: $DOMAIN, port: $HY_PORT, password: $HY_PASS, sni: $DOMAIN, skip-cert-verify: false, up: 50, down: 500, obfs: salamander, obfs-password: $HY_PASS}"
-echo "  - {name: TUIC, server: $DOMAIN, port: $TUIC_PORT, type: tuic, uuid: $UUID, password: $TUIC_PASS, sni: $DOMAIN, alpn: [h3], congestion-controller: bbr, skip-cert-verify: false}"
+echo "  - {name: TUIC, server: $DOMAIN, port: $TUIC_PORT, type: tuic, uuid: $UUID, password: $TUIC_PASS, sni: $DOMAIN, alpn: [h3], congestion-controller: bbr, udp: true, skip-cert-verify: false}"
 echo ""
 echo "=================================="
-echo "注意: TUIC 已修复 sing-box 配置不支持 udp 问题"
